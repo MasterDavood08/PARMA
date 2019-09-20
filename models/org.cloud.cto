@@ -1,0 +1,243 @@
+namespace org.cloud
+
+enum CloudletStatus {
+  o CREATED
+  o READY
+  o QUEUED
+  o INEXEC
+  o SUCCESS
+  o FAILED
+  o CANCELED
+  o PAUSED
+  o RESUMED
+  o FAILED_RESOURCE_UNAVAILABLE
+}
+
+enum PrivacyTag {
+  o PRIVATE
+  o PUBLIC
+}
+
+event AcceptEvent {
+  --> User user
+  --> Cloudlet cloudlet
+}
+
+concept Resource {
+  o Double submissionTime default = 0.0
+  o Double wallClockTime default = 0.0
+  o Double actualCPUTime default = 0.0
+  o Double costPerSec default = 0.0
+  o Long finishedSoFar default = 0
+  o Integer resourceId default = -1
+  o String resourceName default = ""
+}
+
+// concept CloudletScheduler {
+//   o String CloudletScheduler
+// }
+
+asset Cloudlet identified by cloudletId {
+  // ID of cloudlet
+  o String cloudletId
+
+  // execution length of cloudlet
+  o Long cloudletLength
+
+  // input file size before execution
+  o Long cloudletFileSize
+
+  // output file size
+  o Long cloudletOutputSize
+
+  // number of PE cloudlet need
+  o Integer numberOfPes
+
+  // current cloudlet status
+  o CloudletStatus status
+
+  // start time
+  o Double execStartTime
+
+  // finish time
+  o Double finishTime
+
+  // privacy status
+  o PrivacyTag privacyTag
+
+  // ?
+  o String history
+
+  //
+  o Resource[] resList
+
+  // Utiliztio model name
+  o String utilizationModel
+  o Integer index
+  o Integer classType
+
+  // Event logs
+  o CloudletLog[] log
+
+  --> User user
+  --> VM vm
+}
+
+concept CloudletLog {
+  o DateTime timestamp
+  o CloudletStatus status
+}
+
+concept VmScheduler {}
+
+concept TableEntity {
+  --> VM vm
+}
+
+concept RamTableEntity extends TableEntity {
+  o Integer ram
+}
+
+concept BandwidthTableEntity extends TableEntity {
+  o Long bandwidth
+}
+
+concept PeTableEntity extends TableEntity {
+  o Double [] mips
+}
+
+concept RamProvisioner {
+  o Integer ram
+  o Integer availableRam
+  o RamTableEntity [] ramTable
+}
+
+enum PeStatus {
+  o FREE
+  o BUSY
+  o FAILED
+}
+
+concept Pe {
+  o String id
+  o PeStatus status
+  o Double mips
+  o PeProvisioner provisioner
+}
+
+concept BwProvisioner {
+  o Long bw
+  o Long availableBw
+  o BandwidthTableEntity [] bandWidthTable
+}
+
+concept PeProvisioner {
+  o Double mips
+  o Double availableMips
+  o PeTableEntity[] peTable
+}
+
+
+asset Host identified by id {
+  o String id
+  o Long storage
+	o RamProvisioner ramProvisioner
+	o BwProvisioner bwProvisioner
+  o Pe[] peList
+	o VmScheduler vmScheduler
+  o Boolean failed
+  --> VM [] vmList
+  --> VM [] vmsMigratingIn
+  // --> Datacenter datacenter
+}
+
+
+transaction SubmitCloudlet {
+  --> User user
+  --> Cloudlet cloudlet
+}
+
+transaction MapResource {
+  --> Cloudlet cloudlet
+}
+
+transaction AssignResource {
+  --> Cloudlet cloudlet
+}
+
+transaction ExecuteCloudlet {
+  --> Cloudlet cloudlet
+  --> VM vm
+}
+
+transaction CompleteWork {
+  --> Cloudlet cloudlet
+}
+
+event Exec {
+  --> Cloudlet cloudlet
+}
+
+participant User identified by userId {
+  o String userId
+  o String name
+}
+
+concept VmStateHistoryEntry {
+  o String conceptName
+}
+
+asset VM identified by id {
+  // VM ID
+  o String id
+
+  // UserID + VmID
+  o String uid
+
+  // VM Image size (storage that used initialy)
+  o Long size
+
+  // capacity of each VM's PE
+  o Double mips
+
+  // Number of PE required by VM
+  o Integer numberOfPes
+
+  // The required Ram
+  o Integer ram
+
+  // The required Bandwidth
+  o Long bw
+
+  // VM Monitor
+  o String vmm
+
+  // indicate if VM is in migration
+  o Boolean inMigration
+
+  // The current allocated storage size
+	o Long currentAllocatedSize
+
+  // The current allocated ram amount
+	o Integer currentAllocatedRam
+
+  // The current allocated bw
+	o Long currentAllocatedBw
+
+  // The current mips for each VM's PE
+	o Double [] currentAllocatedMips
+
+  // Indicates if VM is being instantiated
+	o Boolean beingInstantiated
+
+  // The MIPS allocation history
+  o VmStateHistoryEntry [] stateHistory
+
+  // The user
+  --> User user
+
+  // The PM that Host the VM
+  o String hostId
+
+  // o CloudletScheduler scheduler
+}
